@@ -1,12 +1,13 @@
 const LoginPage = require("../pageobjects/login.page");
 var { expect } = require("chai");
+const { faker } = require("@faker-js/faker");
 
 describe("My Login application", () => {
   before(async () => {
     await LoginPage.open();
   });
 
-  it.only("log-in page shows a clear error message when invalid details are provided", async () => {
+  it("log-in page shows a clear error message when invalid details are provided", async () => {
     const loginForm = await LoginPage.loginFormSection;
     await browser.waitUntil(
       async () => (await loginForm.isDisplayed()) == true
@@ -26,16 +27,38 @@ describe("My Login application", () => {
   it("Log-in page logs user in when valid details are provided", async () => {
     const usernameField = await LoginPage.inputUsername;
     const passwordField = await LoginPage.inputPassword;
-    await usernameField.clearValue();
+    await LoginPage.clearElement(usernameField);
     await usernameField.setValue("adrian+1004930927@nexudus.com");
-    await passwordField.clearValue();
-    await passwordField.setValue("A8Pd6m16YfJt");
+    await passwordField.click();
+    await LoginPage.clearElement(passwordField);
+    await passwordField.setValue("i0i1lgVD8OK8");
     await LoginPage.clickOnSignInButton();
+    const sideBarDashboardButton = await LoginPage.sideBarDashboardButton;
+    await browser.waitUntil(
+      async () => (await sideBarDashboardButton.isDisplayed()) == true
+    );
+    expect(await browser.getUrl()).to.contain("dashboards/now");
   });
 
   it("Can add and delete a product from the products list", async () => {
-    /**
-     * Login details not working
-     */
+    const url = await browser.getUrl();
+    const productsUrl = url.replace("/dashboards/now", "/billing/products");
+    await browser.url(productsUrl);
+    await LoginPage.clickOnAddProductButton();
+    await LoginPage.openManualEntryForm();
+    const nameOfProduct = faker.lorem.word({
+      length: { min: 5, max: 7 },
+    });
+    await LoginPage.enterProductName(nameOfProduct);
+    await LoginPage.enterProductDescription(faker.lorem.words());
+    await LoginPage.enterCurrencyUnit(10);
+    await LoginPage.clickOnProductSaveButton();
+    await LoginPage.searchForAProduct(nameOfProduct);
+    const productName = await LoginPage.productName;
+    expect(nameOfProduct).to.eq(await productName.getText());
+    await LoginPage.deleteFirstProduct();
+    await browser.refresh();
+    await LoginPage.searchForAProduct(nameOfProduct);
+    await LoginPage.confirmProductDeletion();
   });
 });
